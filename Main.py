@@ -2,7 +2,6 @@ import API
 import heapq
 import sys
 
-
 def log(string):
     sys.stderr.write("{}\n".format(string))
     sys.stderr.flush()
@@ -10,6 +9,7 @@ def log(string):
 def main():
     log("Running...")
 
+    # default information about 16 x 16 mazes, assuming there is no wall
     mazeSettings = [
         [14,13,12,11,10, 9, 8, 7, 7, 8, 9,10,11,12,13,14],
         [13,12,11,10, 9, 8, 7, 6, 6, 7, 8, 9,10,11,12,13],
@@ -30,19 +30,42 @@ def main():
     ]
 
     stack = []
-    # 0 > up | 1 > right | 2 > down | 3 > left | 
+    # Mouse Orientation: 0 > up | 1 > right | 2 > down | 3 > left | 
     orientation = 0
+    # Current mouse Position, the starting point being 0, 0
     currPosition = [0, 0]
+    # saves information about nodes that it passed 
+    # and nodes that it had to make a decision
     nodesSinceLastDecision = []
     lastDecisionNode = []
+
+    # Use this while loop if you want to make more than 1 run to the center of the maze
+    ############################
+    # foundGoal = 0
+    # while foundGoal != 15:
+    #     if mazeSettings[currPosition[0]][currPosition[1]] == 0:
+    #         orientation = 0
+    #         currPosition = [0, 0]
+    #         nodesSinceLastDecision = []
+    #         lastDecisionNode = []
+    #         foundGoal +=1
+    #         API.ackReset()
+    #         log(foundGoal)
+    #         continue
     
     while mazeSettings[currPosition[0]][currPosition[1]] != 0:
+    
+        row, col = currPosition
         F = API.wallFront()
         R = API.wallRight()
         L = API.wallLeft()
 
-        row, col = currPosition
-        # Forward, Right, Left
+        # for a in range(len(mazeSettings)):
+        #     for b in range(len(mazeSettings)):
+        #         API.setText(a, b, mazeSettings[b][a])
+
+
+        # Forward, Right, Left nodes
         nodesAround = [(), (), ()]
         valuesAround = [float("inf"), float("inf"), float("inf")]
 
@@ -94,9 +117,10 @@ def main():
                 nodesAround[2] = (row-1, col)
             valuesAround[2] = leftVal
         
+        # simple flood fill to nodes the mouse passed lastly
         if lastDecisionNode and (row, col) in lastDecisionNode:
             prev = (row, col)
-            for i, node in enumerate(nodesSinceLastDecision[-2]):
+            for node in nodesSinceLastDecision[-2]:
 
                 mazeSettings[node[0]][node[1]] = mazeSettings[prev[0]][prev[1]] + 1
                 prev = (node[0], node[1])
@@ -108,16 +132,8 @@ def main():
             API.moveForward()
             for nodesSince in nodesSinceLastDecision:
                 nodesSince.append((row, col))
-            prev = lastDecisionNode[-1]
-
-            # log(lastDecisionNode)
-            for i, node in enumerate(nodesSinceLastDecision[-1]):
-
-                mazeSettings[node[0]][node[1]] = mazeSettings[prev[0]][prev[1]] + 1
-                prev = (node[0], node[1])
-                # log(node)
-                # log(mazeSettings[node[0]][node[1]])
             
+            # updating position and orientation based on orientation
             if orientation == 0:
                 currPosition[0] -= 1
                 orientation = 2
@@ -140,14 +156,7 @@ def main():
             for nodesSince in nodesSinceLastDecision:
                 nodesSince.append((row, col))
 
-            if valuesAround[1] != float("inf"):
-                if (valuesAround[1], (row, col)) not in stack:
-                    heapq.heappush(stack, (valuesAround[1], (row, col)))
-            
-            if valuesAround[2] != float("inf"):
-                if (valuesAround[2], (row, col)) not in stack:
-                    heapq.heappush(stack, (valuesAround[2], (row, col)))
-
+            # updating position based on orientation
             if orientation == 0:
                 currPosition[0] += 1
             elif orientation == 1:
@@ -164,13 +173,7 @@ def main():
             for nodesSince in nodesSinceLastDecision:
                 nodesSince.append((row, col))
 
-            if valuesAround[0] != float("inf"):
-                if (valuesAround[0], (row, col)) not in stack:
-                    heapq.heappush(stack, (valuesAround[0], (row, col)))
-            if valuesAround[2] != float("inf"):
-                if (valuesAround[2], (row, col)) not in stack:
-                    heapq.heappush(stack, (valuesAround[2], (row, col)))
-
+            # updating position and orientation based on orientation
             if orientation == 0:
                 currPosition[1] += 1
                 orientation = 1
@@ -194,13 +197,7 @@ def main():
             for nodesSince in nodesSinceLastDecision:
                 nodesSince.append((row, col))
 
-            if valuesAround[0] != float("inf"):
-                if (valuesAround[0], (row, col)) not in stack:
-                    heapq.heappush(stack, (valuesAround[0], (row, col)))
-            if valuesAround[1] != float("inf"):
-                if (valuesAround[1], (row, col)) not in stack:
-                    heapq.heappush(stack, (valuesAround[1], (row, col)))
-
+            # updating position and orientation based on orientation
             if orientation == 0:
                 currPosition[1] -= 1
                 orientation = 3
@@ -218,11 +215,12 @@ def main():
                 orientation = 2
 
         if (not L and not R) or (not L and not F) or (not F and not R):
+            # mouse is making a new decision, so we update our arrays to reflect that
             nodesSinceLastDecision.append([])
             if (row, col) not in lastDecisionNode:
                 lastDecisionNode.append((row, col))
 
-    log(mazeSettings)
+        
 
 if __name__ == "__main__":
     main()
